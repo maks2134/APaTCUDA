@@ -1,0 +1,17 @@
+[package]
+name = "lab1"
+version = "0.1.0"
+edition = "2024"
+description = "Lab 1: blocked matrix multiply with auto-vectorization and SSE2"
+publish = false
+
+[[bin]]
+name = "lab1"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = false
+codegen-units = 1
+debug = false
+strip = "none"

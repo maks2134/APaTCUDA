@@ -1,0 +1,9 @@
+# Flags live in Taskfile env (run-vec / run-novec), not here —
+# so vectorized and non-vectorized builds do not overwrite each other.
+#
+# Optional local overrides can go under [build] if you need them temporarily:
+#   rustflags = ["-C", "target-cpu=native"]
+
+[alias]
+# cargo t-release → cargo test --release
+t-release = "test --release"
