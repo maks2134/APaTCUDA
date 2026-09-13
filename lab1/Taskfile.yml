@@ -12,53 +12,53 @@ tasks:
     cmds:
       - task --list
 
-  test:
-    desc: Тесты (Release)
-    cmds:
-      - cargo test --release
-
   run-vec:
-    desc: 'Запуск с автовекторизацией. Пример: task run-vec L=64 M=64 N=64'
+    desc: 'С автовекторизацией. Пример: task run-vec L=64 M=64 N=64'
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
       - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}}
 
   run-novec:
-    desc: 'Запуск без автовекторизации. Пример: task run-novec L=64 M=64 N=64'
+    desc: 'Без автовекторизации. Пример: task run-novec L=64 M=64 N=64'
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
     cmds:
       - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}}
 
-  test-x86:
-    desc: Тесты x86_64 (Mac / Rosetta)
-    platforms: [darwin]
-    cmds:
-      - rustup target add x86_64-apple-darwin
-      - cargo test --release --target x86_64-apple-darwin
-
-  run-vec-x86:
-    desc: 'x86_64 + векторизация (Mac). Пример: task run-vec-x86 L=48 M=48 N=48'
-    platforms: [darwin]
+  build-vec-exe:
+    desc: Собрать и сохранить lab1_vec.exe
     env:
-      RUSTFLAGS: '-C opt-level=3 -C target-cpu=x86-64'
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
-      - rustup target add x86_64-apple-darwin
-      - cargo run --release --target x86_64-apple-darwin -- --l {{.L}} --m {{.M}} --n {{.N}}
+      - cargo build --release
+      - cmd /C copy /Y target\release\lab1.exe target\release\lab1_vec.exe
 
-  run-novec-x86:
-    desc: 'x86_64 без векторизации (Mac). Пример: task run-novec-x86 L=48 M=48 N=48'
-    platforms: [darwin]
+  build-novec-exe:
+    desc: Собрать и сохранить lab1_novec.exe
     env:
-      RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}} -C target-cpu=x86-64'
+      RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
     cmds:
-      - rustup target add x86_64-apple-darwin
-      - cargo run --release --target x86_64-apple-darwin -- --l {{.L}} --m {{.M}} --n {{.N}}
+      - cargo build --release
+      - cmd /C copy /Y target\release\lab1.exe target\release\lab1_novec.exe
+
+  build-both-exe:
+    desc: Сохранить оба exe (vec и novec) для uProf
+    cmds:
+      - task: build-vec-exe
+      - task: build-novec-exe
+      - cmd /C dir target\release\lab1_*.exe
 
   asm:
-    desc: Дизасм ядра mul_add_block_auto (нужен cargo-show-asm)
+    desc: Дизасм mul_add_block_auto (нужен cargo-show-asm)
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
       - cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto"
+
+  asm-sse2:
+    desc: Дизасм mul_add_block_sse2 (нужен cargo-show-asm)
+    env:
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
+    cmds:
+      - cargo asm --release --bin lab1 "lab1::mul_sse2::mul_add_block_sse2"

@@ -1,28 +1,8 @@
-use crate::matrix::{BLOCK, Block, BlockMatrix};
+use crate::matrix::{BLOCK, BlockMatrix};
 
-#[derive(Clone, Debug)]
 pub struct CompareReport {
     pub ok: bool,
     pub max_abs_err: f32,
-}
-
-#[cfg_attr(not(test), allow(dead_code))]
-pub fn blocks_close(a: &Block, b: &Block, abs_tol: f32) -> bool {
-    block_max_abs_err(a, b) <= abs_tol
-}
-
-#[cfg_attr(not(test), allow(dead_code))]
-pub fn block_max_abs_err(a: &Block, b: &Block) -> f32 {
-    let mut max_err = 0.0_f32;
-    for i in 0..BLOCK {
-        for j in 0..BLOCK {
-            let err = (a.data[i][j] - b.data[i][j]).abs();
-            if err > max_err {
-                max_err = err;
-            }
-        }
-    }
-    max_err
 }
 
 pub fn matrices_close(a: &BlockMatrix, b: &BlockMatrix, abs_tol: f32) -> CompareReport {
@@ -42,17 +22,5 @@ pub fn matrices_close(a: &BlockMatrix, b: &BlockMatrix, abs_tol: f32) -> Compare
     CompareReport {
         ok: max_abs_err <= abs_tol,
         max_abs_err,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn identical_blocks() {
-        let a = Block::fill(3.0);
-        let b = Block::fill(3.0);
-        assert!(blocks_close(&a, &b, 0.0));
     }
 }

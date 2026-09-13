@@ -3,7 +3,7 @@
 Отдельный блок из инструкции по установке. На защите открывайте этот файл.
 
 Полная установка окружения: [windows-intel-setup.md](windows-intel-setup.md).  
-Через **Intel VTune** (метрики + Assembly): [vtune-vectorization.md](vtune-vectorization.md).
+Через **AMD uProf** (на AMD вместо VTune): [uprof-vectorization.md](uprof-vectorization.md).
 
 ---
 
@@ -20,7 +20,7 @@
 Один и тот же исходник C1 (`src/mul_auto.rs`). Разница только в **флагах компилятора** (`RUSTFLAGS`).
 
 Время (rdtsc) — **дополнение**. Без дизасма доказательство слабое.  
-**Intel VTune** — сильный бонус (Hotspots + Microarchitecture Exploration); пошагово: [vtune-vectorization.md](vtune-vectorization.md).
+**AMD uProf** — бонус на AMD-CPU (Hotspots, сравнение vec/novec); пошагово: [uprof-vectorization.md](uprof-vectorization.md).
 
 ---
 

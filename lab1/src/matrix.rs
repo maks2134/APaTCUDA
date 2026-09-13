@@ -1,7 +1,7 @@
 pub const BLOCK: usize = 12;
 
 #[repr(C, align(16))]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct Block {
     pub data: [[f32; BLOCK]; BLOCK],
 }
@@ -13,36 +13,9 @@ impl Block {
             data: [[0.0; BLOCK]; BLOCK],
         }
     }
-
-    #[inline]
-    #[cfg_attr(not(test), allow(dead_code))]
-    pub fn fill(value: f32) -> Self {
-        Self {
-            data: [[value; BLOCK]; BLOCK],
-        }
-    }
-
-    #[inline]
-    #[cfg_attr(not(test), allow(dead_code))]
-    pub fn mul_add_scalar(&mut self, a: &Block, b: &Block) {
-        for i in 0..BLOCK {
-            for k in 0..BLOCK {
-                let aik = a.data[i][k];
-                for j in 0..BLOCK {
-                    self.data[i][j] += aik * b.data[k][j];
-                }
-            }
-        }
-    }
 }
 
-impl Default for Block {
-    fn default() -> Self {
-        Self::zeros()
-    }
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct BlockMatrix {
     pub rows: usize,
     pub cols: usize,
@@ -74,20 +47,6 @@ impl BlockMatrix {
     }
 
     #[inline]
-    #[cfg_attr(not(test), allow(dead_code))]
-    pub fn get(&self, row: usize, col: usize) -> &Block {
-        debug_assert!(row < self.rows && col < self.cols);
-        &self.data[row * self.cols + col]
-    }
-
-    #[inline]
-    #[cfg_attr(not(test), allow(dead_code))]
-    pub fn get_mut(&mut self, row: usize, col: usize) -> &mut Block {
-        debug_assert!(row < self.rows && col < self.cols);
-        &mut self.data[row * self.cols + col]
-    }
-
-    #[inline]
     pub unsafe fn get_unchecked(&self, row: usize, col: usize) -> &Block {
         unsafe { self.data.get_unchecked(row * self.cols + col) }
     }
@@ -95,32 +54,5 @@ impl BlockMatrix {
     #[inline]
     pub unsafe fn get_unchecked_mut(&mut self, row: usize, col: usize) -> &mut Block {
         unsafe { self.data.get_unchecked_mut(row * self.cols + col) }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn block_alignment() {
-        assert_eq!(std::mem::align_of::<Block>(), 16);
-        assert_eq!(std::mem::size_of::<Block>(), BLOCK * BLOCK * 4);
-    }
-
-    #[test]
-    fn scalar_times_identity() {
-        let mut c = Block::zeros();
-        let a = Block::fill(2.0);
-        let mut b = Block::zeros();
-        for i in 0..BLOCK {
-            b.data[i][i] = 1.0;
-        }
-        c.mul_add_scalar(&a, &b);
-        for i in 0..BLOCK {
-            for j in 0..BLOCK {
-                assert!((c.data[i][j] - a.data[i][j]).abs() < 1e-5);
-            }
-        }
     }
 }

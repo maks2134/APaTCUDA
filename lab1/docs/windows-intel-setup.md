@@ -220,7 +220,7 @@ task run-vec L=48 M=48 N=48
 Доп. флаги программы — после `--`:
 
 ```bat
-task run-vec L=32 M=32 N=32 -- --seed 7
+task run-vec L=32 M=32 N=32
 ```
 
 ---
@@ -322,7 +322,7 @@ dumpbin /DISASM target\release\lab1.exe > disasm_vec.txt
 В CLion: можно Debug по **Release**-сборке и открыть окно **Disassembly** на функции ядра.
 
 Подробности, таблица инструкций, типичные ошибки и шпаргалка команд — в **[prove-vectorization.md](prove-vectorization.md)**.  
-Доказательство через **Intel VTune** (Hotspots, сравнение vec/novec, бонус Microarchitecture Exploration) — в **[vtune-vectorization.md](vtune-vectorization.md)**.
+Доказательство через **AMD uProf** (Hotspots, сравнение vec/novec; аналог VTune на AMD) — в **[uprof-vectorization.md](uprof-vectorization.md)**.
 
 ---
 
@@ -348,7 +348,7 @@ dumpbin /DISASM target\release\lab1.exe > disasm_vec.txt
 | `linker link.exe not found` | Не установлен workload C++ в Build Tools; переустановить, переоткрыть терминал |
 | `host: aarch64-...` | Не тот rustup; нужен `x86_64-pc-windows-msvc` |
 | `task` не находится | `winget install Task.Task`, новый терминал, PATH |
-| `match: NO` | Увеличить `--tol` только для отладки; в норме при float допуск `1e-4` должен проходить |
+| `match: NO` | На нормальных размерах при допуске `1e-4` обычно проходит; проверьте, что сравниваете C1 и C2 одной сборки |
 | Debug «быстрее править» | Для замеров и дизасма — только Release |
 | В asm нет `mulps` на vec | Проверьте, что `RUSTFLAGS` выставлены **в той же** сессии, что и `cargo asm`; смотрите именно `mul_add_block_auto` |
 | C2 медленнее C1 vec | Увеличить размер / убедиться, что Release; на защите SSE2 не должен проигрывать авто |
