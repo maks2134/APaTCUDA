@@ -79,8 +79,8 @@ tasks:
         fi
 
   asm-auto:
-    desc: Disassemble matmul_auto (requires cargo-show-asm)
+    desc: Disassemble mul_add_block_auto hot kernel (requires cargo-show-asm)
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
-      - cargo asm --release --bin lab1 "lab1::mul_auto::matmul_auto" || cargo asm --release --bin lab1 mul_auto::matmul_auto
+      - cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto" || cargo asm --release --bin lab1 mul_auto::mul_add_block_auto

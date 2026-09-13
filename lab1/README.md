@@ -67,6 +67,11 @@ task run-vec L=64 M=64 N=64
 
 ## Windows Intel + CLion
 
+Полная инструкция на русском: **[docs/windows-intel-setup.md](docs/windows-intel-setup.md)**  
+Доказательство векторизации (`mulps` vs `mulss`): **[docs/prove-vectorization.md](docs/prove-vectorization.md)**  
+Intel VTune: **[docs/vtune-vectorization.md](docs/vtune-vectorization.md)**  
+(установка Build Tools / Rust / Task, CLion, прогоны).
+
 ### 1. Install toolchain
 
 1. [Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) — workload **Desktop development with C++**

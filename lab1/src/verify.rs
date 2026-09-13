@@ -28,7 +28,6 @@ pub fn block_max_abs_err(a: &Block, b: &Block) -> f32 {
     max_err
 }
 
-/// Compare every float in both outer matrices.
 pub fn matrices_close(a: &BlockMatrix, b: &BlockMatrix, abs_tol: f32) -> CompareReport {
     assert_eq!(a.rows, b.rows);
     assert_eq!(a.cols, b.cols);
