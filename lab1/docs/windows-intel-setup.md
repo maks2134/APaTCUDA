@@ -250,7 +250,7 @@ cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto"
 Или:
 
 ```bat
-task asm-auto
+task asm
 ```
 
 **Ищите в дампе:**

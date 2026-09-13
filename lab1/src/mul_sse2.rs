@@ -1,12 +1,9 @@
-//! Manual SSE2 blocked matrix multiply (C2). Available only on x86_64.
-
 #[cfg(target_arch = "x86_64")]
 use crate::matrix::{BLOCK, Block, BlockMatrix};
 
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::{__m128, _mm_add_ps, _mm_loadu_ps, _mm_mul_ps, _mm_set1_ps, _mm_storeu_ps};
 
-/// `C = A * B` with manual SSE2 inside each 12×12 tile.
 #[cfg(target_arch = "x86_64")]
 pub fn matmul_sse2(a: &BlockMatrix, b: &BlockMatrix) -> BlockMatrix {
     assert_eq!(a.cols, b.rows, "inner block dimensions must match");
@@ -17,14 +14,10 @@ pub fn matmul_sse2(a: &BlockMatrix, b: &BlockMatrix) -> BlockMatrix {
 
     for i in 0..l {
         for k in 0..m {
-            // SAFETY: i < l, k < m by loop bounds.
             let a_ik = unsafe { a.get_unchecked(i, k) };
             for j in 0..n {
-                // SAFETY: k < m, j < n, i < l by loop bounds.
                 let b_kj = unsafe { b.get_unchecked(k, j) };
                 let c_ij = unsafe { c.get_unchecked_mut(i, j) };
-                // SAFETY: Block is 16-byte aligned; kernel only touches in-bounds floats.
-                // Caller runs on x86_64 where SSE2 is part of the baseline ABI.
                 unsafe { mul_add_block_sse2(c_ij, a_ik, b_kj) };
             }
         }
@@ -32,22 +25,15 @@ pub fn matmul_sse2(a: &BlockMatrix, b: &BlockMatrix) -> BlockMatrix {
     c
 }
 
-/// 12×12 kernel: three `__m128` chunks per row (j = 0,4,8). No transpose.
-///
-/// # Safety
-/// - `a`, `b`, `c` are valid 12×12 blocks; `Block` alignment is 16.
-/// - CPU must support SSE2 (always true for `x86_64`).
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse2")]
 #[inline(never)]
 pub unsafe fn mul_add_block_sse2(c: &mut Block, a: &Block, b: &Block) {
     debug_assert_eq!(BLOCK, 12);
-    // Edition 2024: unsafe fn body is safe by default — wrap SIMD/pointer ops.
     unsafe {
         for i in 0..BLOCK {
             for k in 0..BLOCK {
                 let aik: __m128 = _mm_set1_ps(a.data[i][k]);
-                // Process columns 0..3, 4..7, 8..11.
                 for j0 in (0..BLOCK).step_by(4) {
                     let c_ptr = c.data[i].as_mut_ptr().add(j0);
                     let b_ptr = b.data[k].as_ptr().add(j0);

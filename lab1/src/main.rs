@@ -1,7 +1,3 @@
-//! Lab 1 — blocked matrix multiply: auto-vectorization (C1) vs SSE2 (C2).
-//!
-//! Variant: float, block size 12. Release only. Timing: RDTSC on x86_64.
-
 mod matrix;
 mod mul_auto;
 mod mul_sse2;
@@ -15,12 +11,7 @@ use timing::{cycles_label, time_call};
 use verify::matrices_close;
 
 fn print_usage(argv0: &str) {
-    eprintln!(
-        "Usage: {argv0} [--l L] [--m M] [--n N] [--seed S] [--tol T] [--skip-sse2]\n\
-         \n\
-         Outer dimensions are counts of 12×12 float blocks.\n\
-         Example: {argv0} --l 48 --m 48 --n 48"
-    );
+    eprintln!("Usage: {argv0} [--l L] [--m M] [--n N] [--seed S] [--tol T] [--skip-sse2]");
 }
 
 struct Args {
@@ -113,68 +104,43 @@ fn main() {
     let b = BlockMatrix::from_seed(args.m, args.n, args.seed.wrapping_add(1));
 
     println!(
-        "lab1 vectorization — float blocks {block}×{block}",
-        block = matrix::BLOCK
+        "block {}x{} float | outer A={}x{} B={}x{} | {}",
+        matrix::BLOCK,
+        matrix::BLOCK,
+        args.l,
+        args.m,
+        args.m,
+        args.n,
+        std::env::consts::ARCH
     );
-    println!(
-        "outer sizes: A=[{}×{}] B=[{}×{}] C=[{}×{}] (blocks)",
-        args.l, args.m, args.m, args.n, args.l, args.n
-    );
-    println!(
-        "scalar floats: A={} B={} C={}",
-        args.l * args.m * matrix::BLOCK * matrix::BLOCK,
-        args.m * args.n * matrix::BLOCK * matrix::BLOCK,
-        args.l * args.n * matrix::BLOCK * matrix::BLOCK
-    );
-    println!("arch: {}", std::env::consts::ARCH);
-    println!("timer: {}", cycles_label());
-    println!();
 
     let t_auto = time_call(|| matmul_auto(&a, &b));
     println!(
-        "C1 matmul_auto:  {:>12} {}  |  {:.6} s",
+        "C1 auto:  {:>14} {}  {:.3} s",
         t_auto.cycles,
         cycles_label(),
         t_auto.elapsed.as_secs_f64()
     );
 
     if args.skip_sse2 || cfg!(not(target_arch = "x86_64")) {
-        if cfg!(not(target_arch = "x86_64")) {
-            println!(
-                "C2 matmul_sse2:  skipped (not x86_64 — use task run-vec-x86 / Windows Intel)"
-            );
-        } else {
-            println!("C2 matmul_sse2:  skipped (--skip-sse2)");
-        }
-        println!();
-        println!("match: n/a (SSE2 not run)");
+        println!("C2 sse2:  skipped");
         return;
     }
 
     let t_sse = time_call(|| matmul_sse2(&a, &b));
     println!(
-        "C2 matmul_sse2:  {:>12} {}  |  {:.6} s",
+        "C2 sse2:  {:>14} {}  {:.3} s",
         t_sse.cycles,
         cycles_label(),
         t_sse.elapsed.as_secs_f64()
     );
 
     let report = matrices_close(&t_auto.value, &t_sse.value, args.tol);
-    println!();
     println!(
-        "match: {}  (checked {} floats, max abs err = {:.6e}, tol = {:.1e})",
+        "match: {}  (max err {:.2e})",
         if report.ok { "yes" } else { "NO" },
-        report.checked_elements,
-        report.max_abs_err,
-        args.tol
+        report.max_abs_err
     );
-
-    if t_sse.cycles > t_auto.cycles {
-        println!(
-            "note: SSE2 cycles ({}) > auto ({}) — on defense SSE2 must not be slower than auto",
-            t_sse.cycles, t_auto.cycles
-        );
-    }
 
     if !report.ok {
         std::process::exit(1);

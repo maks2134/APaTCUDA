@@ -6,81 +6,59 @@ vars:
   N: '16'
   RUSTFLAGS_VEC: '-C opt-level=3 -C target-cpu=native'
   RUSTFLAGS_NOVEC: '-C opt-level=3 -C llvm-args=-vectorize-loops=false -C llvm-args=-vectorize-slp=false'
-  X86_TARGET: 'x86_64-apple-darwin'
 
 tasks:
   default:
-    desc: List available tasks
     cmds:
       - task --list
 
-  fmt:
-    desc: Format Rust sources
-    cmds:
-      - cargo fmt
-
-  clippy:
-    desc: Clippy with warnings denied (Release; needs rustup component clippy)
-    cmds:
-      - cargo clippy --release -- -D warnings
-
   test:
-    desc: Run unit tests in Release (native arch)
+    desc: Тесты (Release)
     cmds:
       - cargo test --release
 
   run-vec:
-    desc: 'Release + auto-vectorization. Override: task run-vec L=64 M=64 N=64'
+    desc: 'Запуск с автовекторизацией. Пример: task run-vec L=64 M=64 N=64'
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
-      - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}} {{.CLI_ARGS}}
+      - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}}
 
   run-novec:
-    desc: 'Release without auto-vectorization. Override: task run-novec L=64 M=64 N=64'
+    desc: 'Запуск без автовекторизации. Пример: task run-novec L=64 M=64 N=64'
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
     cmds:
-      - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}} {{.CLI_ARGS}}
+      - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}}
 
   test-x86:
-    desc: Release tests for x86_64 (Rosetta / Darwin only)
+    desc: Тесты x86_64 (Mac / Rosetta)
     platforms: [darwin]
     cmds:
-      - task: ensure-x86-target
-      - cargo test --release --target {{.X86_TARGET}}
+      - rustup target add x86_64-apple-darwin
+      - cargo test --release --target x86_64-apple-darwin
 
   run-vec-x86:
-    desc: 'x86_64 Release + vec (Darwin). Override: task run-vec-x86 L=48 M=48 N=48'
+    desc: 'x86_64 + векторизация (Mac). Пример: task run-vec-x86 L=48 M=48 N=48'
     platforms: [darwin]
     env:
       RUSTFLAGS: '-C opt-level=3 -C target-cpu=x86-64'
     cmds:
-      - task: ensure-x86-target
-      - cargo run --release --target {{.X86_TARGET}} -- --l {{.L}} --m {{.M}} --n {{.N}} {{.CLI_ARGS}}
+      - rustup target add x86_64-apple-darwin
+      - cargo run --release --target x86_64-apple-darwin -- --l {{.L}} --m {{.M}} --n {{.N}}
 
   run-novec-x86:
-    desc: 'x86_64 Release without vec (Darwin). Override: task run-novec-x86 L=48 M=48 N=48'
+    desc: 'x86_64 без векторизации (Mac). Пример: task run-novec-x86 L=48 M=48 N=48'
     platforms: [darwin]
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}} -C target-cpu=x86-64'
     cmds:
-      - task: ensure-x86-target
-      - cargo run --release --target {{.X86_TARGET}} -- --l {{.L}} --m {{.M}} --n {{.N}} {{.CLI_ARGS}}
+      - rustup target add x86_64-apple-darwin
+      - cargo run --release --target x86_64-apple-darwin -- --l {{.L}} --m {{.M}} --n {{.N}}
 
-  ensure-x86-target:
-    internal: true
-    platforms: [darwin]
-    cmds:
-      - |
-        if ! rustup target list --installed 2>/dev/null | grep -q '{{.X86_TARGET}}'; then
-          echo "Adding Rust target {{.X86_TARGET}} (requires rustup in PATH)..."
-          rustup target add {{.X86_TARGET}}
-        fi
-
-  asm-auto:
-    desc: Disassemble mul_add_block_auto hot kernel (requires cargo-show-asm)
+  asm:
+    desc: Дизасм ядра mul_add_block_auto (нужен cargo-show-asm)
     env:
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
-      - cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto" || cargo asm --release --bin lab1 mul_auto::mul_add_block_auto
+      - cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto"

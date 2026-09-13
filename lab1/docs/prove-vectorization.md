@@ -65,7 +65,7 @@ cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto"
 Короткий вариант (тот же смысл):
 
 ```bat
-task asm-auto
+task asm
 ```
 
 ### Что искать в выводе

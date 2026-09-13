@@ -1,11 +1,5 @@
-//! Auto-vectorizable blocked matrix multiply (C1).
-//!
-//! Compiler decides SIMD via Release + RUSTFLAGS (vec vs novec Task targets).
-
 use crate::matrix::{BLOCK, BlockMatrix};
 
-/// `C = A * B` where A is L×M, B is M×N, C is L×N (block counts).
-/// No transpose; each tile is a 12×12 `f32` block.
 pub fn matmul_auto(a: &BlockMatrix, b: &BlockMatrix) -> BlockMatrix {
     assert_eq!(a.cols, b.rows, "inner block dimensions must match");
     let l = a.rows;
@@ -15,10 +9,8 @@ pub fn matmul_auto(a: &BlockMatrix, b: &BlockMatrix) -> BlockMatrix {
 
     for i in 0..l {
         for k in 0..m {
-            // SAFETY: i < l, k < m by loop bounds.
             let a_ik = unsafe { a.get_unchecked(i, k) };
             for j in 0..n {
-                // SAFETY: k < m, j < n, i < l by loop bounds.
                 let b_kj = unsafe { b.get_unchecked(k, j) };
                 let c_ij = unsafe { c.get_unchecked_mut(i, j) };
                 mul_add_block_auto(c_ij, a_ik, b_kj);
@@ -28,7 +20,6 @@ pub fn matmul_auto(a: &BlockMatrix, b: &BlockMatrix) -> BlockMatrix {
     c
 }
 
-/// Hot 12×12 kernel written so LLVM can auto-vectorize the inner `j` loop.
 #[inline(never)]
 pub fn mul_add_block_auto(
     c: &mut crate::matrix::Block,
@@ -38,7 +29,6 @@ pub fn mul_add_block_auto(
     for i in 0..BLOCK {
         for k in 0..BLOCK {
             let aik = a.data[i][k];
-            // Contiguous stores along a row — good candidate for vectorization.
             for j in 0..BLOCK {
                 c.data[i][j] += aik * b.data[k][j];
             }

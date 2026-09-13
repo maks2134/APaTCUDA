@@ -1,143 +1,83 @@
-# Lab 1 — Vectorization (Rust)
+# Лаба 1 — Векторизация (Rust)
 
-Blocked matrix multiply for the «Architecture of Processors» course.
+Блочное умножение матриц для курса «Архитектура процессоров».
 
-- **Element type:** `float` (`f32`)
-- **Tile size:** 12×12 (variant)
-- **C1:** `matmul_auto` — ordinary loops; LLVM auto-vectorization on/off via `RUSTFLAGS`
-- **C2:** `matmul_sse2` — manual SSE2 (`xmm`, 3×4 floats per row)
-- **Timing:** `rdtsc` / `_rdtsc()` on x86_64 (ARM Instant fallback is for local debug only)
-- **Forbidden:** `clock()`, `time()`; run **Release** only
-- **No transpose**; do not print matrix fragments
+- **Тип:** `float` (`f32`), блок **12×12**
+- **C1:** `matmul_auto` — обычные циклы (автовекторизация вкл/выкл через Task)
+- **C2:** `matmul_sse2` — ручной SSE2
+- **Замер:** `rdtsc` на x86_64; только **Release**
+- Без `clock()` / `time()`, без транспонирования, без печати матриц
 
-## Requirements
+## Документация
 
-- Rust stable (`x86_64-pc-windows-msvc` on the defense laptop)
-- [Task](https://taskfile.dev) (`go-task`)
-- On Apple Silicon Mac: Rosetta + `x86_64-apple-darwin` target for SSE2 / `rdtsc`
+- Windows Intel: [docs/windows-intel-setup.md](docs/windows-intel-setup.md)
+- Доказательство векторизации: [docs/prove-vectorization.md](docs/prove-vectorization.md)
+- Intel VTune: [docs/vtune-vectorization.md](docs/vtune-vectorization.md)
+- Разбор кода (для новичка в Rust): [docs/code-explained.md](docs/code-explained.md)
 
-## Quick start (Mac)
+## Запуск
 
 ```bash
-brew install go-task          # if needed
-export PATH="$HOME/.cargo/bin:$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH"
-
+# Windows / Mac (нативная арх.)
 task test
-task run-vec L=8 M=8 N=8      # correctness on ARM (NEON ≠ lab SSE2)
-```
+task run-vec L=64 M=64 N=64
+task run-novec L=64 M=64 N=64
 
-Full lab path under Rosetta (SSE2 + RDTSC):
-
-```bash
-rustup target add x86_64-apple-darwin
+# Mac: SSE2 и rdtsc через Rosetta
 task test-x86
 task run-vec-x86 L=48 M=48 N=48
 task run-novec-x86 L=48 M=48 N=48
 ```
 
-Increase `L`/`M`/`N` until **C1** takes several seconds on the defense machine.
+`L M N` — число блоков 12×12. На защите увеличьте, пока C1 не займёт несколько секунд.
 
-Variable overrides are Task vars (no `--` before them). Extra CLI flags go after `--`:
+| Задача | Что делает |
+|--------|------------|
+| `task test` | тесты |
+| `task run-vec` | с автовекторизацией |
+| `task run-novec` | без автовекторизации |
+| `task run-vec-x86` | то же на x86_64 (Mac) |
+| `task run-novec-x86` | без векторизации на x86_64 (Mac) |
+| `task test-x86` | тесты x86_64 (Mac) |
+| `task asm` | дизасм ядра (нужен `cargo-show-asm`) |
 
-```bash
-task run-vec L=32 M=32 N=32 -- --seed 7
-```
+## Windows + CLion (кратко)
 
-## Task targets
+1. Build Tools C++ + rustup (`x86_64-pc-windows-msvc`) + `winget install Task.Task`
+2. Открыть папку с `Cargo.toml` в CLion
+3. В Terminal: `task run-vec L=64 M=64 N=64`
+4. Дизасм: `cargo install cargo-show-asm` → `task asm`  
+   vec → `mulps`, novec → `mulss` (см. docs)
 
-| Task | Meaning |
-|------|---------|
-| `task` / `task --list` | List tasks |
-| `task test` | `cargo test --release` (native) |
-| `task clippy` / `task fmt` | Lint / format |
-| `task run-vec` | Release + auto-vectorization |
-| `task run-novec` | Release + vectorization **off** |
-| `task run-vec-x86` | Darwin only: x86_64 + vec |
-| `task run-novec-x86` | Darwin only: x86_64 + no vec |
-| `task test-x86` | Darwin only: tests on x86_64 |
-| `task asm-auto` | Disassemble `matmul_auto` (`cargo-show-asm`) |
+## Вывод программы
 
-Override sizes:
-
-```bash
-task run-vec L=64 M=64 N=64
-```
-
-`RUSTFLAGS` are set per Task (not in `.cargo/config.toml`) so `vec` and `novec` do not clash.
-
-## Windows Intel + CLion
-
-Полная инструкция на русском: **[docs/windows-intel-setup.md](docs/windows-intel-setup.md)**  
-Доказательство векторизации (`mulps` vs `mulss`): **[docs/prove-vectorization.md](docs/prove-vectorization.md)**  
-Intel VTune: **[docs/vtune-vectorization.md](docs/vtune-vectorization.md)**  
-(установка Build Tools / Rust / Task, CLion, прогоны).
-
-### 1. Install toolchain
-
-1. [Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/) — workload **Desktop development with C++**
-2. [rustup](https://rustup.rs) → choose `stable-x86_64-pc-windows-msvc`  
-   Check: `rustc -vV` shows `host: x86_64-pc-windows-msvc` (not `aarch64`)
-3. Task: `winget install Task.Task` (or Chocolatey `choco install go-task` / Scoop `scoop install task`)  
-   Reopen the terminal, then `task --version`
-
-### 2. Open in CLion
-
-1. Install the **Rust** plugin (or use RustRover)
-2. **File → Open** this folder (the one with `Cargo.toml`)
-3. **Settings → Languages & Frameworks → Rust**: toolchain `x86_64-pc-windows-msvc`
-
-### 3. Run (preferred: Terminal)
-
-Same commands as on defense:
-
-```bat
-task run-vec L=64 M=64 N=64
-task run-novec L=64 M=64 N=64
-```
-
-Optional CLion **Shell Script** / **Application** run configs:
-
-- Executable: `task`
-- Options: `run-vec` and a second config `run-novec`
-- Working directory: project root  
-  Do **not** use Debug for timing.
-
-### 4. Prove vectorization
-
-```bat
-cargo install cargo-show-asm
-task asm-auto
-```
-
-Expect `mulps` / `addps` (or `vmulps`) in the `vec` build of `matmul_auto`, and scalar `mulss` / `addss` in `novec`. Compare with the SSE2 kernel (`mul_add_block_sse2`) which always uses packed ops.
-
-## CLI
+Пример:
 
 ```text
-lab1 [--l L] [--m M] [--n N] [--seed S] [--tol T] [--skip-sse2]
+block 12x12 float | outer A=16x16 B=16x16 | x86_64
+C1 auto:          123456 cycles  0.123 s
+C2 sse2:          100000 cycles  0.100 s
+match: yes  (max err 0.00e0)
 ```
 
-Defaults: `L=M=N=16`, seed `42`, abs tolerance `1e-4`.  
-Output: sizes, RDTSC cycles + wall seconds for C1/C2, `match: yes/no` over **all** floats (no matrix dumps).
-
-## Layout
+## Структура
 
 ```text
-src/main.rs      CLI + timed C1/C2 + compare
-src/matrix.rs    Block 12×12, BlockMatrix
-src/mul_auto.rs  matmul_auto (C1)
-src/mul_sse2.rs  matmul_sse2 (C2, x86_64)
-src/timing.rs    _rdtsc / Instant fallback
-src/verify.rs    full-matrix compare
-Taskfile.yml     vec / novec / x86 helpers
+src/main.rs      запуск и вывод
+src/matrix.rs    блоки 12×12
+src/mul_auto.rs  C1
+src/mul_sse2.rs  C2
+src/timing.rs    rdtsc
+src/verify.rs    сравнение C1/C2
+Taskfile.yml
+docs/
 ```
 
-## Defense checklist
+## Чеклист к защите
 
-- [ ] Release only (`task run-vec` / `run-novec`)
-- [ ] Two functions: auto + SSE2
-- [ ] C1 vec vs C1 novec (same source, different `RUSTFLAGS`)
-- [ ] C1 and C2 match completely
-- [ ] SSE2 not slower than auto
-- [ ] RDTSC shown on Intel laptop
-- [ ] Disassembly or VTune if asked
+- [ ] Release: `run-vec` и `run-novec`
+- [ ] Две функции: auto + SSE2
+- [ ] `match: yes`
+- [ ] SSE2 не медленнее auto
+- [ ] На Intel видны cycles (rdtsc)
+- [ ] Дизасм и/или VTune

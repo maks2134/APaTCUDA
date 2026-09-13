@@ -1,8 +1,5 @@
-//! 12×12 float blocks and outer block matrices (row-major).
-
 pub const BLOCK: usize = 12;
 
-/// One 12×12 tile, 16-byte aligned for SSE2 loads/stores.
 #[repr(C, align(16))]
 #[derive(Clone, Copy, Debug)]
 pub struct Block {
@@ -25,7 +22,6 @@ impl Block {
         }
     }
 
-    /// Scalar multiply-accumulate: `self += a * b` (no transpose).
     #[inline]
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn mul_add_scalar(&mut self, a: &Block, b: &Block) {
@@ -46,7 +42,6 @@ impl Default for Block {
     }
 }
 
-/// Outer matrix whose elements are [`Block`] tiles. Layout: `data[i * cols + j]`.
 #[derive(Clone, Debug)]
 pub struct BlockMatrix {
     pub rows: usize,
@@ -70,7 +65,6 @@ impl BlockMatrix {
             for i in 0..BLOCK {
                 for j in 0..BLOCK {
                     state = state.wrapping_mul(1664525).wrapping_add(1013904223);
-                    // Keep values in a modest range so float error stays bounded.
                     let bits = (state >> 9) & 0x007F_FFFF;
                     block.data[i][j] = (bits as f32) * (1.0 / 8_388_608.0) - 0.5;
                 }
@@ -93,15 +87,11 @@ impl BlockMatrix {
         &mut self.data[row * self.cols + col]
     }
 
-    /// # Safety
-    /// `row < rows` and `col < cols`.
     #[inline]
     pub unsafe fn get_unchecked(&self, row: usize, col: usize) -> &Block {
         unsafe { self.data.get_unchecked(row * self.cols + col) }
     }
 
-    /// # Safety
-    /// `row < rows` and `col < cols`.
     #[inline]
     pub unsafe fn get_unchecked_mut(&mut self, row: usize, col: usize) -> &mut Block {
         unsafe { self.data.get_unchecked_mut(row * self.cols + col) }
