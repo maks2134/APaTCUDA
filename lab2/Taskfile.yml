@@ -1,0 +1,61 @@
+version: '3'
+
+vars:
+  L: '256'
+  M: '256'
+  N: '256'
+  MODE: 'all'
+  REPS: '1'
+  RUSTFLAGS_VEC: '-C opt-level=3 -C target-cpu=native'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  run:
+    desc: 'Запуск. Пример: task run L=256 M=256 N=256 MODE=all REPS=1'
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
+    cmds:
+      - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}} --mode {{.MODE}} --reps {{.REPS}}
+
+  build:
+    desc: Собрать release lab2
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
+    cmds:
+      - cargo build --release
+      - ls -la target/release/lab2
+
+  test:
+    desc: Юнит-тесты (выбор тайлов / выравнивание)
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
+    cmds:
+      - cargo test --release
+
+  asm-neon:
+    desc: Дизасм mul_add_block_neon (нужен cargo-show-asm)
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
+    cmds:
+      - cargo asm --release --bin lab2 "lab2::mul_neon::mul_add_block_neon"
+
+  asm-l3:
+    desc: Дизасм matmul_l3 (нужен cargo-show-asm)
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
+    cmds:
+      - cargo asm --release --bin lab2 "lab2::mul_l3::matmul_l3"
+
+  asm:
+    desc: Дизасм neon-ядра и matmul_l3
+    cmds:
+      - task: asm-neon
+      - task: asm-l3

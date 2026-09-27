@@ -1,12 +1,12 @@
 [package]
-name = "lab1"
+name = "lab2"
 version = "0.1.0"
 edition = "2024"
-description = "Lab 1: blocked matrix multiply with auto-vectorization and NEON (Apple Silicon)"
+description = "Lab 2: cache-optimized blocked matrix multiply (NEON + L1/L2/L3 tiling)"
 publish = false
 
 [[bin]]
-name = "lab1"
+name = "lab2"
 path = "src/main.rs"
 
 [profile.release]

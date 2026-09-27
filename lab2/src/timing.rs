@@ -1,6 +1,5 @@
 #[inline(always)]
 pub fn read_cycles() -> u64 {
-    // Apple Silicon: CNTVCT_EL0 — fixed-frequency virtual counter (не rdtsc).
     let v: u64;
     unsafe {
         std::arch::asm!(

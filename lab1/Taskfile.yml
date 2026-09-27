@@ -15,6 +15,7 @@ tasks:
   run-vec:
     desc: 'С автовекторизацией. Пример: task run-vec L=64 M=64 N=64'
     env:
+      CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
       - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}}
@@ -22,43 +23,60 @@ tasks:
   run-novec:
     desc: 'Без автовекторизации. Пример: task run-novec L=64 M=64 N=64'
     env:
+      CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
     cmds:
       - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}}
 
-  build-vec-exe:
-    desc: Собрать и сохранить lab1_vec.exe
+  build-vec:
+    desc: Собрать и сохранить lab1_vec
     env:
+      CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
+      - rm -rf target/release/lab1 target/release/deps/lab1-*
       - cargo build --release
-      - cmd /C copy /Y target\release\lab1.exe target\release\lab1_vec.exe
+      - cp -f target/release/lab1 target/release/lab1_vec
 
-  build-novec-exe:
-    desc: Собрать и сохранить lab1_novec.exe
+  build-novec:
+    desc: Собрать и сохранить lab1_novec
     env:
+      CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
     cmds:
+      - rm -rf target/release/lab1 target/release/deps/lab1-*
       - cargo build --release
-      - cmd /C copy /Y target\release\lab1.exe target\release\lab1_novec.exe
+      - cp -f target/release/lab1 target/release/lab1_novec
 
-  build-both-exe:
-    desc: Сохранить оба exe (vec и novec) для uProf
+  build-both:
+    desc: Сохранить lab1_vec и lab1_novec для профайлера
     cmds:
-      - task: build-vec-exe
-      - task: build-novec-exe
-      - cmd /C dir target\release\lab1_*.exe
+      - task: build-vec
+      - task: build-novec
+      - ls -la target/release/lab1_vec target/release/lab1_novec
+      - shasum target/release/lab1_vec target/release/lab1_novec
 
   asm:
     desc: Дизасм mul_add_block_auto (нужен cargo-show-asm)
     env:
+      CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
       - cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto"
 
-  asm-sse2:
-    desc: Дизасм mul_add_block_sse2 (нужен cargo-show-asm)
+  asm-novec:
+    desc: Дизасм mul_add_block_auto без автовекторизации
     env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
+    cmds:
+      - rm -rf target/release/lab1 target/release/deps/lab1-*
+      - cargo asm --release --bin lab1 "lab1::mul_auto::mul_add_block_auto"
+
+  asm-neon:
+    desc: Дизасм mul_add_block_neon (нужен cargo-show-asm)
+    env:
+      CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
-      - cargo asm --release --bin lab1 "lab1::mul_sse2::mul_add_block_sse2"
+      - cargo asm --release --bin lab1 "lab1::mul_neon::mul_add_block_neon"
