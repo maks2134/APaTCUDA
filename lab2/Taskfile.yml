@@ -7,6 +7,7 @@ vars:
   MODE: 'all'
   REPS: '1'
   RUSTFLAGS_VEC: '-C opt-level=3 -C target-cpu=native'
+  RUSTFLAGS_NOVEC: '-C opt-level=3 -C llvm-args=-vectorize-loops=false -C llvm-args=-vectorize-slp=false'
 
 tasks:
   default:
@@ -14,32 +15,70 @@ tasks:
       - task --list
 
   run:
-    desc: 'Запуск. Пример: task run L=256 M=256 N=256 MODE=all REPS=1'
+    desc: 'Запуск (с автовекторизацией). MODE=all|scalar|neon|l3'
     env:
       CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
       - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}} --mode {{.MODE}} --reps {{.REPS}}
 
+  run-novec:
+    desc: 'Запуск без автовекторизации (честный scalar). MODE=all|scalar|...'
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
+    cmds:
+      - rm -rf target/release/lab2 target/release/deps/lab2-*
+      - cargo run --release -- --l {{.L}} --m {{.M}} --n {{.N}} --mode {{.MODE}} --reps {{.REPS}}
+
   build:
-    desc: Собрать release lab2
+    desc: Собрать release lab2 (с автовекторизацией) → lab2
     env:
       CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
+      - rm -rf target/release/lab2 target/release/deps/lab2-*
       - cargo build --release
-      - ls -la target/release/lab2
+      - cp -f target/release/lab2 target/release/lab2_vec
+      - ls -la target/release/lab2 target/release/lab2_vec
+
+  build-novec:
+    desc: Собрать без автовекторизации → lab2_novec (для scalar / samply)
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
+    cmds:
+      - rm -rf target/release/lab2 target/release/deps/lab2-*
+      - cargo build --release
+      - cp -f target/release/lab2 target/release/lab2_novec
+      - ls -la target/release/lab2_novec
+
+  build-both:
+    desc: lab2_vec + lab2_novec для профайлера
+    cmds:
+      - task: build
+      - task: build-novec
+      - ls -la target/release/lab2_vec target/release/lab2_novec
 
   test:
-    desc: Юнит-тесты (выбор тайлов / выравнивание)
+    desc: Юнит-тесты
     env:
       CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
     cmds:
       - cargo test --release
 
+  asm-scalar:
+    desc: Дизасм mul_add_block_scalar
+    env:
+      CARGO_TARGET_DIR: target
+      RUSTFLAGS: '{{.RUSTFLAGS_NOVEC}}'
+    cmds:
+      - rm -rf target/release/lab2 target/release/deps/lab2-*
+      - cargo asm --release --bin lab2 "lab2::mul_scalar::mul_add_block_scalar"
+
   asm-neon:
-    desc: Дизасм mul_add_block_neon (нужен cargo-show-asm)
+    desc: Дизасм mul_add_block_neon
     env:
       CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
@@ -47,7 +86,7 @@ tasks:
       - cargo asm --release --bin lab2 "lab2::mul_neon::mul_add_block_neon"
 
   asm-l3:
-    desc: Дизасм matmul_l3 (нужен cargo-show-asm)
+    desc: Дизасм matmul_l3
     env:
       CARGO_TARGET_DIR: target
       RUSTFLAGS: '{{.RUSTFLAGS_VEC}}'
@@ -55,7 +94,8 @@ tasks:
       - cargo asm --release --bin lab2 "lab2::mul_l3::matmul_l3"
 
   asm:
-    desc: Дизасм neon-ядра и matmul_l3
+    desc: Дизасм scalar + neon + l3
     cmds:
+      - task: asm-scalar
       - task: asm-neon
       - task: asm-l3

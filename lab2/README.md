@@ -2,50 +2,48 @@
 
 | Результат | Алгоритм |
 |-----------|----------|
-| **C1** | NEON-ядро, **без** L1/L2/L3-тайлинга, порядок `i→j→k` |
-| **C2** | то же NEON-ядро + тайлы **L3→L2→L1** + packing панелей A/B |
+| **C0** | скаляр, порядок `i→j→k`, без NEON |
+| **C1** | NEON-ядро, без L1/L2/L3-тайлинга, `i→j→k` |
+| **C2** | NEON + тайлы **L3→L2→L1** + packing |
 
-Цепочка в профайлере: `matmul_l3` → `matmul_l2` → `matmul_l1` → `mul_add_block_neon`.
+Цепочка C2: `matmul_l3` → `matmul_l2` → `matmul_l1` → `mul_add_block_neon`.
 
-## Какое ускорение ждать
+## Сравнение скорости (честно)
 
-| Сравнение | Типично |
-|-----------|---------|
-| кэш vs **скаляр** | ~10–30× |
-| кэш vs **ручная векторизация** (C2/C1) | ~1.7–2.3× |
+Сравнивать только **одинаковые** `--l --m --n --reps`. Смотреть на **секунды/тики в выводе программы**, не на длину записи samply и не на «99% в функции».
 
 ```bash
-task run L=256 M=256 N=256 MODE=all REPS=1
-# ускорение C2/C1: ~2.4×
+task run-novec L=128 M=128 N=128 MODE=all REPS=1
 ```
 
-На 64×64 набор ≈6.8 MiB ≈ SLC — почти без выигрыша.
+Ожидаемо: C0 медленнее всех; C1 и C2 быстрее C0; C2 ≥ C1 на больших размерах (256).
 
-## Профайлинг
+## Профайлинг (samply) — один и тот же размер!
 
 ```bash
-task build
-samply record ./target/release/lab2 --mode neon --l 256 --m 256 --n 256 --reps 2
-samply record ./target/release/lab2 --mode l3   --l 256 --m 256 --n 256 --reps 2
+task build-both
+
+# ВСЕ ТРИ с одинаковыми L/M/N/reps:
+samply record ./target/release/lab2_novec --mode scalar --l 128 --m 128 --n 128 --reps 1
+samply record ./target/release/lab2_vec   --mode neon   --l 128 --m 128 --n 128 --reps 1
+samply record ./target/release/lab2_vec   --mode l3     --l 128 --m 128 --n 128 --reps 1
 ```
+
+Скаляр только через `lab2_novec` (иначе LLVM сам векторизует циклы).
+
+В профайлере сравнивай **длительность записи / wall time** при одинаковых аргументах.  
+«99% в `mul_add_block_*`» значит «время ушло сюда», а не «эта версия быстрее».
 
 ## Дизассемблирование
 
 ```bash
-cargo install cargo-show-asm
-
-task asm-neon    # mul_add_block_neon
-task asm-l3      # matmul_l3 → L2 → L1
-task asm         # оба
-```
-
-```bash
-cargo asm --release --bin lab2 "lab2::mul_neon::mul_add_block_neon"
-cargo asm --release --bin lab2 "lab2::mul_l3::matmul_l3"
+task asm-scalar
+task asm-neon
+task asm-l3
 ```
 
 ## Обоснование
 
-- C1 (`i→j→k`): векторизация есть, но плохая locality.
-- C2: панель A пакуется и держится, пока не обработаны все j-панели B; размеры ≤ `⌊cache/3·0.9⌋`.
-- Ширина A/B кратна 64 байтам.
+- C0: скалярные `f32`, плохая locality.
+- C1: SIMD внутри блока 12×12.
+- C2: SIMD + панели в L3/L2/L1, ширина кратна 64 байтам.

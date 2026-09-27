@@ -5,6 +5,7 @@ mod cache_params;
 mod matrix;
 mod mul_l3;
 mod mul_neon;
+mod mul_scalar;
 mod timing;
 mod verify;
 
@@ -12,6 +13,7 @@ use cache_params::{TileHierarchy, choose_tiles, detect_cache_sizes, microblock_b
 use matrix::BlockMatrix;
 use mul_l3::matmul_l3;
 use mul_neon::matmul_neon;
+use mul_scalar::matmul_scalar;
 use timing::time_call;
 use verify::matrices_close;
 
@@ -21,6 +23,7 @@ const TOL: f32 = 1e-4;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     All,
+    Scalar,
     Neon,
     L3,
 }
@@ -57,11 +60,12 @@ fn parse_args() -> Result<Args, String> {
                     .ok_or_else(|| "нет значения после --mode".to_string())?;
                 args.mode = match v.as_str() {
                     "all" => Mode::All,
+                    "scalar" => Mode::Scalar,
                     "neon" => Mode::Neon,
                     "l3" | "cache" => Mode::L3,
                     other => {
                         return Err(format!(
-                            "неизвестный --mode {other} (ожидается all|neon|l3)"
+                            "неизвестный --mode {other} (ожидается all|scalar|neon|l3)"
                         ));
                     }
                 };
@@ -88,7 +92,8 @@ fn parse_usize(it: &mut impl Iterator<Item = String>, flag: &str) -> Result<usiz
 
 fn mode_label(mode: Mode) -> &'static str {
     match mode {
-        Mode::All => "all (C1+C2)",
+        Mode::All => "all (C0+C1+C2)",
+        Mode::Scalar => "scalar (только C0)",
         Mode::Neon => "neon (только C1)",
         Mode::L3 => "l3 (только C2)",
     }
@@ -118,6 +123,16 @@ fn print_tiles(tiles: &TileHierarchy) {
             t.width_b_bytes(),
         );
     }
+}
+
+fn check_close(label: &str, a: &BlockMatrix, b: &BlockMatrix) -> bool {
+    let report = matrices_close(a, b, TOL);
+    println!(
+        "совпадение {label}: {}  (макс. ошибка {:.2e})",
+        if report.ok { "да" } else { "нет" },
+        report.max_abs_err
+    );
+    report.ok
 }
 
 fn main() {
@@ -177,11 +192,33 @@ fn main() {
     println!("тайлы (микроблоки):");
     print_tiles(&tiles);
 
+    let mut c_scalar = None;
     let mut c_neon = None;
     let mut c_l3 = None;
+    let mut t_scalar_s = None;
     let mut t_neon_s = None;
     let mut t_l3_s = None;
     let reps = args.reps;
+
+    if args.mode == Mode::All || args.mode == Mode::Scalar {
+        let _ = matmul_scalar(&a, &b);
+        let t = time_call(|| {
+            let mut last = None;
+            for _ in 0..reps {
+                last = Some(matmul_scalar(&a, &b));
+            }
+            last.unwrap()
+        });
+        let per = t.elapsed.as_secs_f64() / reps as f64;
+        println!(
+            "C0 scalar:{:>14} тиков cntvct  {:.3} с  ({:.3} с/rep)",
+            t.cycles,
+            t.elapsed.as_secs_f64(),
+            per
+        );
+        t_scalar_s = Some(per);
+        c_scalar = Some(t.value);
+    }
 
     if args.mode == Mode::All || args.mode == Mode::Neon {
         let _ = matmul_neon(&a, &b);
@@ -223,21 +260,33 @@ fn main() {
         c_l3 = Some(t.value);
     }
 
+    if let (Some(ts), Some(tn)) = (t_scalar_s, t_neon_s) {
+        if tn > 0.0 {
+            println!("ускорение C1/C0: {:.2}×  (NEON vs scalar)", ts / tn);
+        }
+    }
+    if let (Some(ts), Some(tl)) = (t_scalar_s, t_l3_s) {
+        if tl > 0.0 {
+            println!("ускорение C2/C0: {:.2}×  (L3 vs scalar)", ts / tl);
+        }
+    }
     if let (Some(tn), Some(tl)) = (t_neon_s, t_l3_s) {
         if tl > 0.0 {
-            println!("ускорение C2/C1: {:.2}×  (L3-тайлинг vs NEON)", tn / tl);
+            println!("ускорение C2/C1: {:.2}×  (L3 vs NEON)", tn / tl);
         }
     }
 
-    if let (Some(neon), Some(l3)) = (c_neon.as_ref(), c_l3.as_ref()) {
-        let report = matrices_close(neon, l3, TOL);
-        println!(
-            "совпадение: {}  (макс. ошибка {:.2e})",
-            if report.ok { "да" } else { "нет" },
-            report.max_abs_err
-        );
-        if !report.ok {
-            std::process::exit(1);
-        }
+    let mut ok = true;
+    if let (Some(s), Some(n)) = (c_scalar.as_ref(), c_neon.as_ref()) {
+        ok &= check_close("C0↔C1", s, n);
+    }
+    if let (Some(s), Some(l)) = (c_scalar.as_ref(), c_l3.as_ref()) {
+        ok &= check_close("C0↔C2", s, l);
+    }
+    if let (Some(n), Some(l)) = (c_neon.as_ref(), c_l3.as_ref()) {
+        ok &= check_close("C1↔C2", n, l);
+    }
+    if !ok {
+        std::process::exit(1);
     }
 }

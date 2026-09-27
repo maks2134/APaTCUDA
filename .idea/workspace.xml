@@ -3,8 +3,30 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/lab2/Cargo.toml">
+      <package file="$PROJECT_DIR$/lab2">
+        <feature name="default" enabled="true" />
+      </package>
+    </cargoProject>
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8337a13-3aa4-4bb7-8351-a0d93b2fda97" name="Changes" comment="lab1" />
+    <list default="true" id="a8337a13-3aa4-4bb7-8351-a0d93b2fda97" name="Changes" comment="lab2">
+      <change afterPath="$PROJECT_DIR$/lab2/command.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab2/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/lab2/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab2/Taskfile.yml" beforeDir="false" afterPath="$PROJECT_DIR$/lab2/Taskfile.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab2/profile.json.gz" beforeDir="false" afterPath="$PROJECT_DIR$/lab2/profile.json.gz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lab2/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/lab2/src/main.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,15 +36,15 @@
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/lab1" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="J7dXGDNo" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6,
-  "fromUser": false
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6,
+  &quot;fromUser&quot;: false
+}</component>
   <component name="ProjectId" id="3JGrSQIY5rze3BXTjJQHZNFI3Ti" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -43,13 +65,22 @@
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
     "last_opened_file_path": "/Users/makskozlov/bsuir/apitCUDA",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
     "python.packages.toolwindow.project.migrated.to.right.top.v2": "true"
   }
 }]]></component>
-  <component name="SelectedDebugProfileService"><![CDATA[{
-  "profileIdByStamp": [],
-  "modificationCount": 1
-}]]></component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="SelectedDebugProfileService">{
+  &quot;profileIdByStamp&quot;: [],
+  &quot;modificationCount&quot;: 1
+}</component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="a8337a13-3aa4-4bb7-8351-a0d93b2fda97" name="Changes" comment="" />
@@ -65,6 +96,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="lab1" />
-    <option name="LAST_COMMIT_MESSAGE" value="lab1" />
+    <MESSAGE value="lab2" />
+    <option name="LAST_COMMIT_MESSAGE" value="lab2" />
   </component>
 </project>
