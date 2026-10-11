@@ -1,0 +1,27 @@
+[package]
+name = "lab3"
+version = "0.1.0"
+edition = "2024"
+description = "Lab 3: row deinterleave (variant 28) — CPU + CUDA via cudarc/NVRTC"
+publish = false
+
+[[bin]]
+name = "lab3"
+path = "src/main.rs"
+
+[dependencies]
+cudarc = { version = "0.19", default-features = false, features = [
+    "std",
+    "driver",
+    "nvrtc",
+    "cuda-version-from-build-system",
+    "fallback-dynamic-loading",
+] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[profile.release]
+opt-level = 3
+lto = false
+codegen-units = 1
+debug = false
+strip = "none"
